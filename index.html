@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ask Me Anything - Harshitha</title>
+  <style>
+    body { font-family: Arial; padding: 2rem; max-width: 600px; margin: auto; }
+    textarea, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 1rem; }
+    #response { margin-top: 20px; white-space: pre-line; background: #f9f9f9; padding: 1rem; border-radius: 5px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h2>Ask Me Anything About My Work 👩‍💻</h2>
+  <textarea id="question" rows="3" placeholder="Type your question here..."></textarea>
+  <button onclick="ask()">Ask</button>
+  <div id="response"></div>
+
+  <script>
+    async function ask() {
+      const question = document.getElementById("question").value;
+      const responseDiv = document.getElementById("response");
+      responseDiv.innerHTML = "Thinking...";
+
+      const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await res.json();
+      responseDiv.innerHTML = data.answer || "No response received.";
+    }
+  </script>
+</body>
+</html>
