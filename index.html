@@ -2,136 +2,221 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Ask Me Anything - Harshitha</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harshitha's Chatbot</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-      max-width: 600px;
-      margin: auto;
-      background: #fffbe6;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-    textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 1rem;
-    }
-    button {
-      background-color: #f0f0f0;
-      border: 1px solid #ccc;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #e0e0e0;
-    }
-    #chat {
-      margin-top: 20px;
-      background: #f9f9f9;
+
+    header {
+      background-color: #4a90e2;
+      color: white;
       padding: 1rem;
-      border-radius: 5px;
-      border: 1px solid #ddd;
-      max-height: 400px;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    #chat {
+      flex-grow: 1;
+      padding: 1rem;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
-    .bubble {
-      padding: 10px 15px;
-      margin: 10px 0;
-      border-radius: 15px;
+
+    .message-container {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 12px;
       max-width: 80%;
-      line-height: 1.4;
+    }
+
+    .message.user {
+      background-color: #dcf8c6;
+      align-self: flex-end;
+      margin-left: auto;
+      border-radius: 15px 15px 0 15px;
+    }
+
+    .message.bot {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      align-self: flex-start;
+      margin-right: auto;
+      border-radius: 15px 15px 15px 0;
+    }
+
+    .message {
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      position: relative;
+      word-wrap: break-word;
       display: inline-block;
-      clear: both;
+      max-width: 100%;
     }
-    .user {
-      background: #daf0ff;
-      float: right;
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin: 0 8px;
     }
-    .bot {
-      background: #eaeaea;
-      float: left;
-    }
-    .timestamp {
+
+    .username {
       font-size: 0.75rem;
-      color: #555;
-      display: block;
-      margin-top: 4px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 4px;
     }
-    .clear {
-      clear: both;
+
+    .timestamp {
+      font-size: 0.7rem;
+      color: #888;
+      margin-top: 5px;
+      text-align: right;
     }
-    #resetBtn {
-      margin-top: 10px;
-      background-color: #ffdddd;
-      border: 1px solid #ffaaaa;
+
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background-color: white;
+      border-top: 1px solid #ccc;
     }
-    #resetBtn:hover {
-      background-color: #ffcaca;
+
+    #inputArea input {
+      flex-grow: 1;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      padding: 10px 15px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    #inputArea button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      padding: 10px 14px;
+      margin-left: 10px;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    .typing-dots {
+      width: 40px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .typing-dots span {
+      height: 8px;
+      width: 8px;
+      background-color: #999;
+      border-radius: 50%;
+      animation: blink 1.4s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0; }
+      40% { opacity: 1; }
+    }
+
+    @media screen and (max-width: 600px) {
+      header { font-size: 1rem; }
+      #inputArea input { font-size: 0.9rem; }
+      #inputArea button { font-size: 1.1rem; }
     }
   </style>
 </head>
 <body>
-  <h2>Ask Me Anything About My Work 👩‍💻</h2>
-  <textarea id="question" rows="3" placeholder="Type your question here..."></textarea>
-  <button onclick="ask()">Ask</button>
-  <button id="resetBtn" onclick="resetChat()">Reset Chat</button>
-
+  <header>Ask Me Anything About My Work 👩‍💻</header>
   <div id="chat"></div>
+
+  <div id="inputArea">
+    <input type="text" id="question" placeholder="Type your message..." onkeydown="handleEnter(event)" />
+    <button onclick="ask()">➤</button>
+  </div>
 
   <script>
     const chatDiv = document.getElementById("chat");
+    const questionInput = document.getElementById("question");
 
     function formatTimestamp() {
       const now = new Date();
       return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    function appendMessage(role, text, timestamp) {
+    function createMessageElement(role, text, timestamp, isTyping = false) {
+      const container = document.createElement("div");
+      container.className = `message-container ${role}`;
+
+      const avatar = document.createElement("img");
+      avatar.className = "avatar";
+      avatar.src = role === "user"
+        ? "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+        : "https://cdn-icons-png.flaticon.com/512/4712/4712109.png";
+
       const bubble = document.createElement("div");
-      bubble.className = "bubble " + role;
-      bubble.innerHTML = `${text}<span class="timestamp">${timestamp}</span>`;
-      chatDiv.appendChild(bubble);
-      chatDiv.appendChild(document.createElement("div")).className = "clear";
+      bubble.className = `message ${role}`;
+
+      const username = document.createElement("div");
+      username.className = "username";
+      username.textContent = role === "user" ? "You" : "Harshitha AI";
+
+      const timestampEl = document.createElement("div");
+      timestampEl.className = "timestamp";
+      timestampEl.textContent = timestamp;
+
+      if (isTyping) {
+        const dots = document.createElement("div");
+        dots.className = "typing-dots";
+        for (let i = 0; i < 3; i++) {
+          dots.appendChild(document.createElement("span"));
+        }
+        bubble.appendChild(dots);
+      } else {
+        bubble.textContent = text;
+      }
+
+      bubble.appendChild(timestampEl);
+      container.appendChild(role === "user" ? bubble : avatar);
+      container.appendChild(role === "user" ? avatar : bubble);
+      chatDiv.appendChild(container);
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
 
-    function saveToLocalStorage(history) {
-      localStorage.setItem("chatHistory", JSON.stringify(history));
-    }
-
-    function loadChatHistory() {
-      const saved = localStorage.getItem("chatHistory");
-      if (saved) {
-        const history = JSON.parse(saved);
-        history.forEach(entry => appendMessage(entry.role, entry.text, entry.timestamp));
+    function handleEnter(e) {
+      if (e.key === 'Enter') {
+        ask();
+        e.preventDefault();
       }
     }
 
-    function resetChat() {
-      localStorage.removeItem("chatHistory");
-      chatDiv.innerHTML = "";
-    }
-
     async function ask() {
-      const questionInput = document.getElementById("question");
       const question = questionInput.value.trim();
       if (!question) return;
 
       const timestamp = formatTimestamp();
+      createMessageElement("user", question, timestamp);
+      saveMessage("user", question, timestamp);
 
-      // Show user question
-      appendMessage("user", question, timestamp);
+      questionInput.value = "";
 
-      // Save user message
-      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-      chatHistory.push({ role: "user", text: question, timestamp });
-
-      // Temporary bot message
-      appendMessage("bot", "Thinking...", timestamp);
+      // Show typing animation
+      const typingTimestamp = formatTimestamp();
+      const tempEl = createMessageElement("bot", "", typingTimestamp, true);
 
       try {
         const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
@@ -139,30 +224,39 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question })
         });
-
         const data = await res.json();
         const answer = data.reply || "No response received.";
 
-        // Replace the last bot bubble (which said "Thinking...")
-        chatDiv.removeChild(chatDiv.lastChild); // clear
-        chatDiv.removeChild(chatDiv.lastChild); // bubble
+        // Remove typing
+        chatDiv.removeChild(chatDiv.lastChild);
 
         const replyTimestamp = formatTimestamp();
-        appendMessage("bot", answer, replyTimestamp);
-
-        // Save bot response
-        chatHistory.push({ role: "bot", text: answer, timestamp: replyTimestamp });
-        saveToLocalStorage(chatHistory);
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "Something went wrong. Please try again.", formatTimestamp());
+        createMessageElement("bot", answer, replyTimestamp);
+        saveMessage("bot", answer, replyTimestamp);
+      } catch (err) {
+        console.error(err);
+        chatDiv.removeChild(chatDiv.lastChild);
+        createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
       }
+    }
 
-      questionInput.value = "";
+    function saveMessage(role, text, timestamp) {
+      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+      chatHistory.push({ role, text, timestamp });
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function loadHistory() {
+      const saved = localStorage.getItem("chatHistory");
+      if (!saved) return;
+      const history = JSON.parse(saved);
+      history.forEach(({ role, text, timestamp }) => {
+        createMessageElement(role, text, timestamp);
+      });
     }
 
     // Load on page load
-    loadChatHistory();
+    loadHistory();
   </script>
 </body>
 </html>
