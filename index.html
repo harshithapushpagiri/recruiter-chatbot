@@ -70,13 +70,6 @@
       margin: 0 8px;
     }
 
-    .username {
-      font-size: 0.75rem;
-      font-weight: bold;
-      color: #444;
-      margin-bottom: 4px;
-    }
-
     .timestamp {
       font-size: 0.7rem;
       color: #888;
@@ -128,15 +121,28 @@
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
+    .feedback {
+      margin-top: 5px;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+
+    .feedback button {
+      margin-left: 5px;
+      padding: 4px 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      cursor: pointer;
+    }
+
+    .feedback button:hover {
+      background-color: #eee;
+    }
+
     @keyframes blink {
       0%, 80%, 100% { opacity: 0; }
       40% { opacity: 1; }
-    }
-
-    @media screen and (max-width: 600px) {
-      header { font-size: 1rem; }
-      #inputArea input { font-size: 0.9rem; }
-      #inputArea button { font-size: 1.1rem; }
     }
   </style>
 </head>
@@ -153,12 +159,15 @@
     const chatDiv = document.getElementById("chat");
     const questionInput = document.getElementById("question");
 
+    let lastQuestion = '';
+    let lastAnswer = '';
+
     function formatTimestamp() {
       const now = new Date();
       return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    function createMessageElement(role, text, timestamp, isTyping = false) {
+    function createMessageElement(role, text, timestamp, isTyping = false, allowFeedback = false) {
       const container = document.createElement("div");
       container.className = `message-container ${role}`;
 
@@ -170,10 +179,6 @@
 
       const bubble = document.createElement("div");
       bubble.className = `message ${role}`;
-
-      const username = document.createElement("div");
-      username.className = "username";
-      username.textContent = role === "user" ? "You" : "Harshitha AI";
 
       const timestampEl = document.createElement("div");
       timestampEl.className = "timestamp";
@@ -191,6 +196,18 @@
       }
 
       bubble.appendChild(timestampEl);
+
+      if (allowFeedback) {
+        const feedback = document.createElement("div");
+        feedback.className = "feedback";
+        feedback.innerHTML = `
+          Was this helpful?
+          <button onclick="sendFeedback('yes')">👍</button>
+          <button onclick="sendFeedback('no')">👎</button>
+        `;
+        bubble.appendChild(feedback);
+      }
+
       container.appendChild(role === "user" ? bubble : avatar);
       container.appendChild(role === "user" ? avatar : bubble);
       chatDiv.appendChild(container);
@@ -208,15 +225,14 @@
       const question = questionInput.value.trim();
       if (!question) return;
 
+      lastQuestion = question;
       const timestamp = formatTimestamp();
       createMessageElement("user", question, timestamp);
-      saveMessage("user", question, timestamp);
-
       questionInput.value = "";
 
-      // Show typing animation
+      // Typing animation
       const typingTimestamp = formatTimestamp();
-      const tempEl = createMessageElement("bot", "", typingTimestamp, true);
+      createMessageElement("bot", "", typingTimestamp, true);
 
       try {
         const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
@@ -224,15 +240,29 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question })
         });
+
         const data = await res.json();
         const answer = data.reply || "No response received.";
 
         // Remove typing
         chatDiv.removeChild(chatDiv.lastChild);
 
+        lastAnswer = answer;
         const replyTimestamp = formatTimestamp();
-        createMessageElement("bot", answer, replyTimestamp);
-        saveMessage("bot", answer, replyTimestamp);
+        createMessageElement("bot", answer, replyTimestamp, false, true);
+
+        // 📝 Log Q&A immediately
+        await fetch("https://harshicdr.app.n8n.cloud/webhook-test/log-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: lastQuestion,
+            answer: lastAnswer,
+            timestamp: new Date().toISOString(),
+            source: "vercel-chatbot"
+          })
+        });
+
       } catch (err) {
         console.error(err);
         chatDiv.removeChild(chatDiv.lastChild);
@@ -240,23 +270,29 @@
       }
     }
 
-    function saveMessage(role, text, timestamp) {
-      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-      chatHistory.push({ role, text, timestamp });
-      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    async function sendFeedback(vote) {
+      try {
+        await fetch("https://harshicdr.app.n8n.cloud/webhook-test/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: lastQuestion,
+            answer: lastAnswer,
+            feedback: vote,
+            timestamp: new Date().toISOString()
+          })
+        });
+        alert("Thanks for your feedback!");
+      } catch (e) {
+        alert("Could not submit feedback. Try again.");
+        console.error(e);
+      }
     }
 
-    function loadHistory() {
-      const saved = localStorage.getItem("chatHistory");
-      if (!saved) return;
-      const history = JSON.parse(saved);
-      history.forEach(({ role, text, timestamp }) => {
-        createMessageElement(role, text, timestamp);
-      });
-    }
-
-    // Load on page load
-    loadHistory();
+    // Load on page load (optional: restore local history)
+    window.onload = () => {
+      localStorage.clear(); // clear old history to avoid mismatch
+    };
   </script>
 </body>
 </html>
