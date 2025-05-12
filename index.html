@@ -219,7 +219,7 @@
       const tempEl = createMessageElement("bot", "", typingTimestamp, true);
 
       try {
-        const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
+        const res = await fetch("https://harshicdr.app.n8n.cloud/webhook/recruiter-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question })
