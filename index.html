@@ -252,6 +252,7 @@
         createMessageElement("bot", answer, replyTimestamp, false, true);
 
         // 📝 Log Q&A immediately
+        try {
         await fetch("https://harshicdr.app.n8n.cloud/webhook-test/log-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -262,13 +263,14 @@
             source: "vercel-chatbot"
           })
         });
-
-      } catch (err) {
+      } catch (e) {
+        console.error("Logging error:", e);
+      }
+      catch (err) {
         console.error(err);
         chatDiv.removeChild(chatDiv.lastChild);
         createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
       }
-    }
 
     async function sendFeedback(vote) {
       try {
