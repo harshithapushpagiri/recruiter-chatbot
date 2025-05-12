@@ -4,22 +4,22 @@
   <meta charset="UTF-8" />
   <title>Ask Me Anything - Harshitha</title>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      padding: 2rem; 
-      max-width: 600px; 
-      margin: auto; 
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
       background: #fffbe6;
     }
     h2 {
       text-align: center;
       color: #333;
     }
-    textarea, button { 
-      width: 100%; 
-      padding: 10px; 
-      margin-top: 10px; 
-      font-size: 1rem; 
+    textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 1rem;
     }
     button {
       background-color: #f0f0f0;
@@ -29,14 +29,36 @@
     button:hover {
       background-color: #e0e0e0;
     }
-    #response { 
-      margin-top: 20px; 
-      white-space: pre-line; 
-      background: #f9f9f9; 
-      padding: 1rem; 
-      border-radius: 5px; 
-      border: 1px solid #ddd; 
-      min-height: 50px;
+    #chat {
+      margin-top: 20px;
+      background: #f9f9f9;
+      padding: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .bubble {
+      padding: 10px 15px;
+      margin: 10px 0;
+      border-radius: 15px;
+      max-width: 80%;
+      line-height: 1.4;
+      display: inline-block;
+      clear: both;
+    }
+    .user {
+      background: #daf0ff;
+      align-self: flex-end;
+      float: right;
+    }
+    .bot {
+      background: #eaeaea;
+      align-self: flex-start;
+      float: left;
+    }
+    .clear {
+      clear: both;
     }
   </style>
 </head>
@@ -44,13 +66,33 @@
   <h2>Ask Me Anything About My Work 👩‍💻</h2>
   <textarea id="question" rows="3" placeholder="Type your question here..."></textarea>
   <button onclick="ask()">Ask</button>
-  <div id="response">Your response will appear here...</div>
+
+  <div id="chat"></div>
 
   <script>
     async function ask() {
-      const question = document.getElementById("question").value;
-      const responseDiv = document.getElementById("response");
-      responseDiv.innerHTML = "Thinking...";
+      const question = document.getElementById("question").value.trim();
+      if (!question) return;
+
+      const chatDiv = document.getElementById("chat");
+
+      // Add user question
+      const userBubble = document.createElement("div");
+      userBubble.className = "bubble user";
+      userBubble.textContent = question;
+      chatDiv.appendChild(userBubble);
+      chatDiv.appendChild(document.createElement("div")).className = "clear";
+
+      document.getElementById("question").value = "";
+
+      // Add temporary bot typing...
+      const typingBubble = document.createElement("div");
+      typingBubble.className = "bubble bot";
+      typingBubble.textContent = "Thinking...";
+      chatDiv.appendChild(typingBubble);
+      chatDiv.appendChild(document.createElement("div")).className = "clear";
+
+      chatDiv.scrollTop = chatDiv.scrollHeight;
 
       try {
         const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
@@ -60,11 +102,13 @@
         });
 
         const data = await res.json();
-        responseDiv.innerHTML = data.reply || "No response received.";
+        typingBubble.textContent = data.reply || "No response received.";
       } catch (error) {
-        responseDiv.innerHTML = "Something went wrong. Please try again.";
+        typingBubble.textContent = "Something went wrong. Please try again.";
         console.error("Fetch error:", error);
       }
+
+      chatDiv.scrollTop = chatDiv.scrollHeight;
     }
   </script>
 </body>
