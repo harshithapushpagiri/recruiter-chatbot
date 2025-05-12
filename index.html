@@ -49,16 +49,28 @@
     }
     .user {
       background: #daf0ff;
-      align-self: flex-end;
       float: right;
     }
     .bot {
       background: #eaeaea;
-      align-self: flex-start;
       float: left;
+    }
+    .timestamp {
+      font-size: 0.75rem;
+      color: #555;
+      display: block;
+      margin-top: 4px;
     }
     .clear {
       clear: both;
+    }
+    #resetBtn {
+      margin-top: 10px;
+      background-color: #ffdddd;
+      border: 1px solid #ffaaaa;
+    }
+    #resetBtn:hover {
+      background-color: #ffcaca;
     }
   </style>
 </head>
@@ -66,33 +78,60 @@
   <h2>Ask Me Anything About My Work 👩‍💻</h2>
   <textarea id="question" rows="3" placeholder="Type your question here..."></textarea>
   <button onclick="ask()">Ask</button>
+  <button id="resetBtn" onclick="resetChat()">Reset Chat</button>
 
   <div id="chat"></div>
 
   <script>
+    const chatDiv = document.getElementById("chat");
+
+    function formatTimestamp() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function appendMessage(role, text, timestamp) {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble " + role;
+      bubble.innerHTML = `${text}<span class="timestamp">${timestamp}</span>`;
+      chatDiv.appendChild(bubble);
+      chatDiv.appendChild(document.createElement("div")).className = "clear";
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    function saveToLocalStorage(history) {
+      localStorage.setItem("chatHistory", JSON.stringify(history));
+    }
+
+    function loadChatHistory() {
+      const saved = localStorage.getItem("chatHistory");
+      if (saved) {
+        const history = JSON.parse(saved);
+        history.forEach(entry => appendMessage(entry.role, entry.text, entry.timestamp));
+      }
+    }
+
+    function resetChat() {
+      localStorage.removeItem("chatHistory");
+      chatDiv.innerHTML = "";
+    }
+
     async function ask() {
-      const question = document.getElementById("question").value.trim();
+      const questionInput = document.getElementById("question");
+      const question = questionInput.value.trim();
       if (!question) return;
 
-      const chatDiv = document.getElementById("chat");
+      const timestamp = formatTimestamp();
 
-      // Add user question
-      const userBubble = document.createElement("div");
-      userBubble.className = "bubble user";
-      userBubble.textContent = question;
-      chatDiv.appendChild(userBubble);
-      chatDiv.appendChild(document.createElement("div")).className = "clear";
+      // Show user question
+      appendMessage("user", question, timestamp);
 
-      document.getElementById("question").value = "";
+      // Save user message
+      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+      chatHistory.push({ role: "user", text: question, timestamp });
 
-      // Add temporary bot typing...
-      const typingBubble = document.createElement("div");
-      typingBubble.className = "bubble bot";
-      typingBubble.textContent = "Thinking...";
-      chatDiv.appendChild(typingBubble);
-      chatDiv.appendChild(document.createElement("div")).className = "clear";
-
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      // Temporary bot message
+      appendMessage("bot", "Thinking...", timestamp);
 
       try {
         const res = await fetch("https://harshicdr.app.n8n.cloud/webhook-test/recruiter-chat", {
@@ -102,14 +141,28 @@
         });
 
         const data = await res.json();
-        typingBubble.textContent = data.reply || "No response received.";
+        const answer = data.reply || "No response received.";
+
+        // Replace the last bot bubble (which said "Thinking...")
+        chatDiv.removeChild(chatDiv.lastChild); // clear
+        chatDiv.removeChild(chatDiv.lastChild); // bubble
+
+        const replyTimestamp = formatTimestamp();
+        appendMessage("bot", answer, replyTimestamp);
+
+        // Save bot response
+        chatHistory.push({ role: "bot", text: answer, timestamp: replyTimestamp });
+        saveToLocalStorage(chatHistory);
       } catch (error) {
-        typingBubble.textContent = "Something went wrong. Please try again.";
-        console.error("Fetch error:", error);
+        console.error("Error:", error);
+        appendMessage("bot", "Something went wrong. Please try again.", formatTimestamp());
       }
 
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      questionInput.value = "";
     }
+
+    // Load on page load
+    loadChatHistory();
   </script>
 </body>
 </html>
