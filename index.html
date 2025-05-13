@@ -90,20 +90,6 @@
       cursor: pointer;
       font-size: 1.2rem;
     }
-    .typing-dots {
-      width: 40px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .typing-dots span {
-      height: 8px;
-      width: 8px;
-      background-color: #999;
-      border-radius: 50%;
-      animation: blink 1.4s infinite;
-    }
-    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
     .feedback {
       margin-top: 5px;
       text-align: right;
@@ -117,8 +103,10 @@
       background-color: #fff;
       cursor: pointer;
     }
-    .feedback button:hover {
-      background-color: #eee;
+    .feedback button.selected {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
     }
     #refreshChat {
       margin: 10px auto;
@@ -131,25 +119,12 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
-    @keyframes blink {
-      0%, 80%, 100% { opacity: 0; }
-      40% { opacity: 1; }
-    }
-    @media screen and (max-width: 600px) {
-      header { font-size: 1rem; }
-      #inputArea input { font-size: 0.9rem; }
-      #inputArea button { font-size: 1.1rem; }
-    }
   </style>
 </head>
 <body>
   <header>Ask Me Anything About My Work 👩‍💻</header>
-
-  <!-- 🔄 Refresh Button -->
   <button id="refreshChat">🔄 Refresh Chat</button>
-
   <div id="chat"></div>
-
   <div id="inputArea">
     <input type="text" id="question" placeholder="Type your message..." onkeydown="handleEnter(event)" />
     <button onclick="ask()">➤</button>
@@ -200,8 +175,8 @@
         feedback.className = "feedback";
         feedback.innerHTML = `
           Was this helpful?
-          <button onclick="sendFeedback('yes')">👍</button>
-          <button onclick="sendFeedback('no')">👎</button>
+          <button onclick="sendFeedback('yes', this)">👍</button>
+          <button onclick="sendFeedback('no', this)">👎</button>
         `;
         bubble.appendChild(feedback);
       }
@@ -240,7 +215,7 @@
 
         const data = await res.json();
         const answer = data.reply || "No response received.";
-        chatDiv.removeChild(chatDiv.lastChild); // remove typing
+        chatDiv.removeChild(chatDiv.lastChild);
         lastAnswer = answer;
         createMessageElement("bot", answer, formatTimestamp(), false, true);
         saveMessage("bot", answer, formatTimestamp());
@@ -263,8 +238,12 @@
       }
     }
 
-    async function sendFeedback(vote) {
+    async function sendFeedback(vote, buttonEl) {
       try {
+        const parent = buttonEl.parentElement;
+        parent.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+        buttonEl.classList.add('selected');
+
         await fetch("https://harshicdr.app.n8n.cloud/webhook/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -276,8 +255,7 @@
           })
         });
       } catch (e) {
-        alert("Could not submit feedback. Try again.");
-        console.error(e);
+        console.error("Feedback failed:", e);
       }
     }
 
@@ -296,16 +274,14 @@
       });
     }
 
-    // 🔄 Refresh Chat Logic
     document.getElementById("refreshChat").addEventListener("click", () => {
-        localStorage.removeItem("chatHistory");
-        chatDiv.innerHTML = "";
-        lastQuestion = "";
-        lastAnswer = "";
-        chatDiv.scrollTop = 0;
+      localStorage.removeItem("chatHistory");
+      chatDiv.innerHTML = "";
+      lastQuestion = "";
+      lastAnswer = "";
+      chatDiv.scrollTop = 0;
     });
 
-    // Load chat on page load
     loadHistory();
   </script>
 </body>
