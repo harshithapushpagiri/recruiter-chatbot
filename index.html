@@ -275,7 +275,6 @@
             timestamp: new Date().toISOString()
           })
         });
-        alert("Thanks for your feedback!");
       } catch (e) {
         alert("Could not submit feedback. Try again.");
         console.error(e);
@@ -299,13 +298,11 @@
 
     // 🔄 Refresh Chat Logic
     document.getElementById("refreshChat").addEventListener("click", () => {
-      if (confirm("Are you sure you want to reset the conversation?")) {
         localStorage.removeItem("chatHistory");
         chatDiv.innerHTML = "";
         lastQuestion = "";
         lastAnswer = "";
         chatDiv.scrollTop = 0;
-      }
     });
 
     // Load chat on page load
