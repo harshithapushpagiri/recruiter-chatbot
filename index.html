@@ -291,6 +291,25 @@
       });
     }
 
+            // 📝 Log Q&A immediately
+        await fetch("https://harshicdr.app.n8n.cloud/webhook-test/log-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: lastQuestion,
+            answer: lastAnswer,
+            timestamp: new Date().toISOString(),
+            source: "vercel-chatbot"
+          })
+        });
+
+      } catch (err) {
+        console.error(err);
+        chatDiv.removeChild(chatDiv.lastChild);
+        createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
+      }
+    }
+
     async function sendFeedback(vote) {
       try {
         await fetch("https://harshicdr.app.n8n.cloud/webhook/feedback", {
