@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -14,7 +14,6 @@
       flex-direction: column;
       height: 100vh;
     }
-
     header {
       background-color: #4a90e2;
       color: white;
@@ -23,7 +22,6 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
-
     #chat {
       flex-grow: 1;
       padding: 1rem;
@@ -31,21 +29,18 @@
       display: flex;
       flex-direction: column;
     }
-
     .message-container {
       display: flex;
       align-items: flex-end;
       margin-bottom: 12px;
       max-width: 80%;
     }
-
     .message.user {
       background-color: #dcf8c6;
       align-self: flex-end;
       margin-left: auto;
       border-radius: 15px 15px 0 15px;
     }
-
     .message.bot {
       background-color: #fff;
       border: 1px solid #ddd;
@@ -53,7 +48,6 @@
       margin-right: auto;
       border-radius: 15px 15px 15px 0;
     }
-
     .message {
       padding: 10px 14px;
       font-size: 0.95rem;
@@ -62,35 +56,24 @@
       display: inline-block;
       max-width: 100%;
     }
-
     .avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
       margin: 0 8px;
     }
-
-    .username {
-      font-size: 0.75rem;
-      font-weight: bold;
-      color: #444;
-      margin-bottom: 4px;
-    }
-
     .timestamp {
       font-size: 0.7rem;
       color: #888;
       margin-top: 5px;
       text-align: right;
     }
-
     #inputArea {
       display: flex;
       padding: 10px;
       background-color: white;
       border-top: 1px solid #ccc;
     }
-
     #inputArea input {
       flex-grow: 1;
       border: 1px solid #ccc;
@@ -99,7 +82,6 @@
       font-size: 1rem;
       outline: none;
     }
-
     #inputArea button {
       background-color: #4a90e2;
       color: white;
@@ -110,13 +92,11 @@
       cursor: pointer;
       font-size: 1.2rem;
     }
-
     .typing-dots {
       width: 40px;
       display: flex;
       justify-content: space-between;
     }
-
     .typing-dots span {
       height: 8px;
       width: 8px;
@@ -124,16 +104,13 @@
       border-radius: 50%;
       animation: blink 1.4s infinite;
     }
-
     .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
     .feedback {
       margin-top: 5px;
       text-align: right;
       font-size: 0.85rem;
     }
-
     .feedback button {
       margin-left: 5px;
       padding: 4px 8px;
@@ -142,16 +119,13 @@
       background-color: #fff;
       cursor: pointer;
     }
-
     .feedback button:hover {
       background-color: #eee;
     }
-
     @keyframes blink {
       0%, 80%, 100% { opacity: 0; }
       40% { opacity: 1; }
     }
-
     @media screen and (max-width: 600px) {
       header { font-size: 1rem; }
       #inputArea input { font-size: 0.9rem; }
@@ -192,10 +166,6 @@
 
       const bubble = document.createElement("div");
       bubble.className = `message ${role}`;
-
-      const username = document.createElement("div");
-      username.className = "username";
-      username.textContent = role === "user" ? "You" : "Harshitha AI";
 
       const timestampEl = document.createElement("div");
       timestampEl.className = "timestamp";
@@ -259,6 +229,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question })
         });
+
         const data = await res.json();
         const answer = data.reply || "No response received.";
 
@@ -269,29 +240,8 @@
         const replyTimestamp = formatTimestamp();
         createMessageElement("bot", answer, replyTimestamp, false, true);
         saveMessage("bot", answer, replyTimestamp);
-      } catch (err) {
-        console.error(err);
-        chatDiv.removeChild(chatDiv.lastChild);
-        createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
-      }
-    }
 
-    function saveMessage(role, text, timestamp) {
-      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-      chatHistory.push({ role, text, timestamp });
-      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-    }
-
-    function loadHistory() {
-      const saved = localStorage.getItem("chatHistory");
-      if (!saved) return;
-      const history = JSON.parse(saved);
-      history.forEach(({ role, text, timestamp }) => {
-        createMessageElement(role, text, timestamp);
-      });
-    }
-
-            // 📝 Log Q&A immediately
+        // ✅ Log Q&A immediately
         await fetch("https://harshicdr.app.n8n.cloud/webhook/log-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -327,6 +277,21 @@
         alert("Could not submit feedback. Try again.");
         console.error(e);
       }
+    }
+
+    function saveMessage(role, text, timestamp) {
+      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+      chatHistory.push({ role, text, timestamp });
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function loadHistory() {
+      const saved = localStorage.getItem("chatHistory");
+      if (!saved) return;
+      const history = JSON.parse(saved);
+      history.forEach(({ role, text, timestamp }) => {
+        createMessageElement(role, text, timestamp);
+      });
     }
 
     // Load on page load
