@@ -51,9 +51,7 @@
     .message {
       padding: 10px 14px;
       font-size: 0.95rem;
-      position: relative;
       word-wrap: break-word;
-      display: inline-block;
       max-width: 100%;
     }
     .avatar {
@@ -122,6 +120,17 @@
     .feedback button:hover {
       background-color: #eee;
     }
+    #refreshChat {
+      margin: 10px auto;
+      display: block;
+      background-color: #f25f5c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
     @keyframes blink {
       0%, 80%, 100% { opacity: 0; }
       40% { opacity: 1; }
@@ -135,6 +144,10 @@
 </head>
 <body>
   <header>Ask Me Anything About My Work 👩‍💻</header>
+
+  <!-- 🔄 Refresh Button -->
+  <button id="refreshChat">🔄 Refresh Chat</button>
+
   <div id="chat"></div>
 
   <div id="inputArea">
@@ -145,7 +158,6 @@
   <script>
     const chatDiv = document.getElementById("chat");
     const questionInput = document.getElementById("question");
-
     let lastQuestion = '';
     let lastAnswer = '';
 
@@ -166,7 +178,6 @@
 
       const bubble = document.createElement("div");
       bubble.className = `message ${role}`;
-
       const timestampEl = document.createElement("div");
       timestampEl.className = "timestamp";
       timestampEl.textContent = timestamp;
@@ -218,10 +229,7 @@
       saveMessage("user", question, timestamp);
 
       questionInput.value = "";
-
-      // Show typing animation
-      const typingTimestamp = formatTimestamp();
-      createMessageElement("bot", "", typingTimestamp, true);
+      createMessageElement("bot", "", timestamp, true);
 
       try {
         const res = await fetch("https://harshicdr.app.n8n.cloud/webhook/recruiter-chat", {
@@ -232,16 +240,11 @@
 
         const data = await res.json();
         const answer = data.reply || "No response received.";
-
-        // Remove typing
-        chatDiv.removeChild(chatDiv.lastChild);
-
+        chatDiv.removeChild(chatDiv.lastChild); // remove typing
         lastAnswer = answer;
-        const replyTimestamp = formatTimestamp();
-        createMessageElement("bot", answer, replyTimestamp, false, true);
-        saveMessage("bot", answer, replyTimestamp);
+        createMessageElement("bot", answer, formatTimestamp(), false, true);
+        saveMessage("bot", answer, formatTimestamp());
 
-        // ✅ Log Q&A immediately
         await fetch("https://harshicdr.app.n8n.cloud/webhook/log-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -294,7 +297,18 @@
       });
     }
 
-    // Load on page load
+    // 🔄 Refresh Chat Logic
+    document.getElementById("refreshChat").addEventListener("click", () => {
+      if (confirm("Are you sure you want to reset the conversation?")) {
+        localStorage.removeItem("chatHistory");
+        chatDiv.innerHTML = "";
+        lastQuestion = "";
+        lastAnswer = "";
+        chatDiv.scrollTop = 0;
+      }
+    });
+
+    // Load chat on page load
     loadHistory();
   </script>
 </body>
