@@ -130,159 +130,169 @@
     <button onclick="ask()">➤</button>
   </div>
 
-  <script>
-    const chatDiv = document.getElementById("chat");
-    const questionInput = document.getElementById("question");
-    let lastQuestion = '';
-    let lastAnswer = '';
+<script>
+  const chatDiv = document.getElementById("chat");
+  const questionInput = document.getElementById("question");
+  let lastQuestion = '';
+  let lastAnswer = '';
 
-    function formatTimestamp() {
-      const now = new Date();
-      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
+  // ✅ SESSION ID logic
+  let session_id = localStorage.getItem("chat_session_id");
+  if (!session_id) {
+    session_id = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", session_id);
+  }
 
-    function createMessageElement(role, text, timestamp, isTyping = false, allowFeedback = false) {
-      const container = document.createElement("div");
-      container.className = `message-container ${role}`;
+  function formatTimestamp() {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 
-      const avatar = document.createElement("img");
-      avatar.className = "avatar";
-      avatar.src = role === "user"
-        ? "https://cdn-icons-png.flaticon.com/512/847/847969.png"
-        : "https://cdn-icons-png.flaticon.com/512/4712/4712109.png";
+  function createMessageElement(role, text, timestamp, isTyping = false, allowFeedback = false) {
+    const container = document.createElement("div");
+    container.className = `message-container ${role}`;
 
-      const bubble = document.createElement("div");
-      bubble.className = `message ${role}`;
-      const timestampEl = document.createElement("div");
-      timestampEl.className = "timestamp";
-      timestampEl.textContent = timestamp;
+    const avatar = document.createElement("img");
+    avatar.className = "avatar";
+    avatar.src = role === "user"
+      ? "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+      : "https://cdn-icons-png.flaticon.com/512/4712/4712109.png";
 
-      if (isTyping) {
-        const dots = document.createElement("div");
-        dots.className = "typing-dots";
-        for (let i = 0; i < 3; i++) {
-          dots.appendChild(document.createElement("span"));
-        }
-        bubble.appendChild(dots);
-      } else {
-        bubble.textContent = text;
+    const bubble = document.createElement("div");
+    bubble.className = `message ${role}`;
+    const timestampEl = document.createElement("div");
+    timestampEl.className = "timestamp";
+    timestampEl.textContent = timestamp;
+
+    if (isTyping) {
+      const dots = document.createElement("div");
+      dots.className = "typing-dots";
+      for (let i = 0; i < 3; i++) {
+        dots.appendChild(document.createElement("span"));
       }
-
-      bubble.appendChild(timestampEl);
-
-      if (allowFeedback) {
-        const feedback = document.createElement("div");
-        feedback.className = "feedback";
-        feedback.innerHTML = `
-          Was this helpful?
-          <button onclick="sendFeedback('yes', this)">👍</button>
-          <button onclick="sendFeedback('no', this)">👎</button>
-        `;
-        bubble.appendChild(feedback);
-      }
-
-      container.appendChild(role === "user" ? bubble : avatar);
-      container.appendChild(role === "user" ? avatar : bubble);
-      chatDiv.appendChild(container);
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      bubble.appendChild(dots);
+    } else {
+      bubble.textContent = text;
     }
 
-    function handleEnter(e) {
-      if (e.key === 'Enter') {
-        ask();
-        e.preventDefault();
-      }
+    bubble.appendChild(timestampEl);
+
+    if (allowFeedback) {
+      const feedback = document.createElement("div");
+      feedback.className = "feedback";
+      feedback.innerHTML = `
+        Was this helpful?
+        <button onclick="sendFeedback('yes', this)">👍</button>
+        <button onclick="sendFeedback('no', this)">👎</button>
+      `;
+      bubble.appendChild(feedback);
     }
 
-    async function ask() {
-      const question = questionInput.value.trim();
-      if (!question) return;
+    container.appendChild(role === "user" ? bubble : avatar);
+    container.appendChild(role === "user" ? avatar : bubble);
+    chatDiv.appendChild(container);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
 
-      lastQuestion = question;
-      const timestamp = formatTimestamp();
-      createMessageElement("user", question, timestamp);
-      saveMessage("user", question, timestamp);
-
-      questionInput.value = "";
-      createMessageElement("bot", "", timestamp, true);
-
-      try {
-        const res = await fetch("https://harshicdr.app.n8n.cloud/webhook/recruiter-chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question })
-        });
-
-        const data = await res.json();
-        const answer = data.reply || "No response received.";
-        chatDiv.removeChild(chatDiv.lastChild);
-        lastAnswer = answer;
-        createMessageElement("bot", answer, formatTimestamp(), false, true);
-        saveMessage("bot", answer, formatTimestamp());
-
-        await fetch("https://harshicdr.app.n8n.cloud/webhook/log-chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: lastQuestion,
-            answer: lastAnswer,
-            timestamp: new Date().toISOString(),
-            source: "vercel-chatbot"
-          })
-        });
-
-      } catch (err) {
-        console.error(err);
-        chatDiv.removeChild(chatDiv.lastChild);
-        createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
-      }
+  function handleEnter(e) {
+    if (e.key === 'Enter') {
+      ask();
+      e.preventDefault();
     }
+  }
 
-    async function sendFeedback(vote, buttonEl) {
-      try {
-        const parent = buttonEl.parentElement;
-        parent.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
-        buttonEl.classList.add('selected');
+  async function ask() {
+    const question = questionInput.value.trim();
+    if (!question) return;
 
-        await fetch("https://harshicdr.app.n8n.cloud/webhook/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: lastQuestion,
-            answer: lastAnswer,
-            feedback: vote,
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (e) {
-        console.error("Feedback failed:", e);
-      }
-    }
+    lastQuestion = question;
+    const timestamp = formatTimestamp();
+    createMessageElement("user", question, timestamp);
+    saveMessage("user", question, timestamp);
 
-    function saveMessage(role, text, timestamp) {
-      let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-      chatHistory.push({ role, text, timestamp });
-      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-    }
+    questionInput.value = "";
+    createMessageElement("bot", "", timestamp, true);
 
-    function loadHistory() {
-      const saved = localStorage.getItem("chatHistory");
-      if (!saved) return;
-      const history = JSON.parse(saved);
-      history.forEach(({ role, text, timestamp }) => {
-        createMessageElement(role, text, timestamp);
+    try {
+      const res = await fetch("https://harshicdr.app.n8n.cloud/webhook/recruiter-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, session_id })
       });
+
+      const data = await res.json();
+      const answer = data.reply || "No response received.";
+      chatDiv.removeChild(chatDiv.lastChild);
+      lastAnswer = answer;
+      createMessageElement("bot", answer, formatTimestamp(), false, true);
+      saveMessage("bot", answer, formatTimestamp());
+
+      await fetch("https://harshicdr.app.n8n.cloud/webhook/log-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: lastQuestion,
+          answer: lastAnswer,
+          timestamp: new Date().toISOString(),
+          source: "vercel-chatbot",
+          session_id // ✅ added
+        })
+      });
+
+    } catch (err) {
+      console.error(err);
+      chatDiv.removeChild(chatDiv.lastChild);
+      createMessageElement("bot", "Something went wrong. Try again later.", formatTimestamp());
     }
+  }
 
-    document.getElementById("refreshChat").addEventListener("click", () => {
-      localStorage.removeItem("chatHistory");
-      chatDiv.innerHTML = "";
-      lastQuestion = "";
-      lastAnswer = "";
-      chatDiv.scrollTop = 0;
+  async function sendFeedback(vote, buttonEl) {
+    try {
+      const parent = buttonEl.parentElement;
+      parent.querySelectorAll('button').forEach(btn => btn.classList.remove('selected'));
+      buttonEl.classList.add('selected');
+
+      await fetch("https://harshicdr.app.n8n.cloud/webhook/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: lastQuestion,
+          answer: lastAnswer,
+          feedback: vote,
+          timestamp: new Date().toISOString(),
+          session_id // ✅ added
+        })
+      });
+    } catch (e) {
+      console.error("Feedback failed:", e);
+    }
+  }
+
+  function saveMessage(role, text, timestamp) {
+    let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+    chatHistory.push({ role, text, timestamp });
+    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+  }
+
+  function loadHistory() {
+    const saved = localStorage.getItem("chatHistory");
+    if (!saved) return;
+    const history = JSON.parse(saved);
+    history.forEach(({ role, text, timestamp }) => {
+      createMessageElement(role, text, timestamp);
     });
+  }
 
-    loadHistory();
-  </script>
+  document.getElementById("refreshChat").addEventListener("click", () => {
+    localStorage.removeItem("chatHistory");
+    chatDiv.innerHTML = "";
+    lastQuestion = "";
+    lastAnswer = "";
+    chatDiv.scrollTop = 0;
+  });
+
+  loadHistory();
+</script>
+
 </body>
 </html>
