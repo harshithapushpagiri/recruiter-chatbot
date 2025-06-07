@@ -587,7 +587,7 @@
     const typingElement = createMessageElement("bot", "", timestamp, true);
 
     try {
-      const res = await fetch("https://harshithap.app.n8n.cloud/webhook/recruiter-chat", {
+      const res = await fetch("https://harship.app.n8n.cloud/webhook/recruiter-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, session_id })
@@ -604,7 +604,7 @@
       saveMessage("bot", answer, formatTimestamp());
 
       // Log the conversation
-      await fetch("https://harshithap.app.n8n.cloud/webhook/log-chat", {
+      await fetch("https://harship.app.n8n.cloud/webhook/log-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -632,7 +632,7 @@
       parent.querySelectorAll('.feedback-btn').forEach(btn => btn.classList.remove('selected'));
       buttonEl.classList.add('selected');
 
-      await fetch("https://harshithap.app.n8n.cloud/webhook/feedback", {
+      await fetch("https://harship.app.n8n.cloud/webhook/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
