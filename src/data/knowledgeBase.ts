@@ -141,7 +141,7 @@ export const resumeData: ResumeData = {
       description: "Trait-based storytelling engine for children, integrating emotional tone and narration.",
       impact: "Built emotionally engaging stories with high personalization.",
       technologies: ["OpenAI", "Trait Input", "Narration Control", "Emotion Tagging"],
-      deploymentLink: "https://chatgpt.com/g/g-68107b48c0e88191902eedfbb54113d0-stories-of-life-jiivn-kthaaen-jeevan-kathayein"
+      deploymentLink: "https://new-stories-of-life.vercel.app/"
     }
   ]
 };
