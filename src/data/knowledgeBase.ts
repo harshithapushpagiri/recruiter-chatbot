@@ -317,7 +317,7 @@ export const knowledgeBase: KnowledgeEntry[] = [
   {
     id: "ee8bc366",
     question: "Stories of Life - AI Storytelling Platform",
-    answer: "Stories of Life is a personal side project where I created an AI-powered storytelling platform to deliver emotionally rich, culturally grounded tales for children. It includes multilingual narration, personalized story generation, and a soothing audio-first experience.",
+    answer: "Stories of Life is a personal side project (featured in Lenny Newsletter) where I created an AI-powered storytelling platform to deliver emotionally rich, culturally grounded tales for children. It includes multilingual narration, personalized story generation, and a soothing audio-first experience.",
     category: "side_projects",
     keywords: ["AI", "Children", "MVP", "NLP", "Storytelling"],
     timePeriod: "Apr-25",
